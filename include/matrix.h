@@ -1,6 +1,8 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#include <functional>
+
 class Matrix
 {
     public:
@@ -21,7 +23,7 @@ class Matrix
         //Operations
         double& operator()(int r, int c);
         double operator()(int r, int c) const;
-        Matrix operator=(const Matrix& matrix);
+        Matrix& operator=(const Matrix& matrix);
         bool operator==(const Matrix& matrix) const;
         bool operator!=(const Matrix& matrix) const;
         Matrix operator+(const Matrix& matrix) const;
@@ -36,6 +38,8 @@ class Matrix
 
         //Utilities
         Matrix transpose() const;
+        Matrix sum_rows() const;
+        Matrix Hadamard(const Matrix& matrix) const;
         static Matrix identity(int size);
         static Matrix zeros(int r, int c);
         static Matrix ones(int r, int c);

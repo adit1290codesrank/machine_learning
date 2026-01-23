@@ -1,6 +1,8 @@
 #include "../include/matrix.h"
 #include <omp.h>
 #include <stdexcept>
+#include <functional>
+#include <iostream>
 
 Matrix::Matrix() : rows(0), cols(0), data(nullptr) {}
 
@@ -40,7 +42,7 @@ double Matrix::operator()(int r, int c) const
     return data[r*cols+c];
 }
 
-Matrix Matrix::operator=(const Matrix& matrix)
+Matrix& Matrix::operator=(const Matrix& matrix)
 {
     if(this!=&matrix)
     {
@@ -148,4 +150,24 @@ Matrix Matrix::apply(double (*function)(double)) const
     Matrix result(rows,cols);
     for(int i=0;i<rows*cols;++i)result.data[i]=function(data[i]);
     return result;
+}
+
+Matrix Matrix::sum_rows() const
+{
+    Matrix result(1,cols);
+    for(int j=0;j<cols;++j)
+    {
+        double sum=0.0;
+        for(int i=0;i<rows;++i)sum+=data[i*cols+j];
+        result.data[j]=sum;
+    }
+    return result;
+}
+
+Matrix Matrix::Hadamard(const Matrix& matrix) const
+{
+    if(rows!=matrix.rows||cols!=matrix.cols) throw std::invalid_argument("Dimension mismatch");
+    Matrix ans(rows,cols);
+    for(int i=0;i<rows*cols;++i)ans.data[i]=data[i]*matrix.data[i];
+    return ans;
 }

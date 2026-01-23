@@ -95,3 +95,36 @@ Normalization_with_min_max min_max_scale(const Matrix& X)
     }
     return norm;
 }
+
+double mse(const Matrix& y_true, const Matrix& y_pred)
+{
+    if(y_true.rows!=y_pred.rows || y_true.cols!=y_pred.cols) throw std::invalid_argument("Dimensions of y_true and y_pred must be the same");
+    double sum=0.0;
+    int m=y_true.rows;
+    int n=y_true.cols;
+    for(int i=0;i<m;i++)
+    {
+        for(int j=0;j<n;j++)
+        {
+            double diff=y_true(i,j)-y_pred(i,j);
+            sum+=diff*diff;
+        }
+    }
+    return sum/(2*m*n);
+}
+
+Matrix dmse(const Matrix& y_true, const Matrix& y_pred)
+{
+    if(y_true.rows!=y_pred.rows || y_true.cols!=y_pred.cols) throw std::invalid_argument("Dimensions of y_true and y_pred must be the same");
+    int m=y_true.rows;
+    int n=y_true.cols;
+    Matrix gradient=Matrix::zeros(m,n);
+    for(int i=0;i<m;i++)
+    {
+        for(int j=0;j<n;j++)
+        {
+            gradient(i,j)=(y_pred(i,j)-y_true(i,j))/(m*n);
+        }
+    }
+    return gradient;
+}
