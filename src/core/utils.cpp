@@ -1,6 +1,7 @@
 #include "../include/core/utils.h"
 #include <stdexcept>
 #include <cmath>
+#include <algorithm>
 
 TrainTestSplit train_test_split(const Matrix& X, const Matrix& y, double test_size, bool shuffle)
 {
@@ -127,4 +128,12 @@ Matrix dmse(const Matrix& y_true, const Matrix& y_pred)
         }
     }
     return gradient;
+}
+
+double cross_entropy_loss(const Matrix& y_true,const Matrix& y_pred)
+{
+    double loss=0.0;
+    double epsilon=1e-9;
+    for(int i=0;i<y_true.rows;i++) for(int j=0;j<y_true.cols;j++) loss+= - (y_true(i,j)*std::log(y_pred(i,j)+epsilon) + (1 - y_true(i,j))*std::log(1 - y_pred(i,j)+epsilon));
+    return loss/(y_true.rows);
 }

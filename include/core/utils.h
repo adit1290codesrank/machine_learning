@@ -38,5 +38,7 @@ inline double tanh(double x) {return std::tanh(x);}
 inline double dtanh(double x) {double t=std::tanh(x); return 1.0 - t*t;}
 double mse(const Matrix& y_true, const Matrix& y_pred);
 Matrix dmse(const Matrix& y_true, const Matrix& y_pred);
+double cross_entropy_loss(const Matrix& y_true, const Matrix& y_pred);
+
 
 #endif

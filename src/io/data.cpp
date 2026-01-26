@@ -1,4 +1,4 @@
-#include "../include/data.h"
+#include "../include/io/data.h"
 #include <fstream>
 #include <iostream>
 #include <vector>

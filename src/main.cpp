@@ -7,6 +7,7 @@
 #include "../include/activation.h"
 #include "../include/network.h"
 #include "../include/io/data.h"
+#include "../include/layers/softmax.h"
 #include <algorithm>
 #include <chrono>
 
@@ -58,11 +59,11 @@ int main()
 {
     std::srand(std::time(0));
     std::cout << "Loading Train Set..." << std::endl;
-    Matrix X_train = DataLoader::load_images("emnist-balanced-train-images-idx3-ubyte");
-    Matrix Y_train = DataLoader::load_labels("emnist-balanced-train-labels-idx1-ubyte");
+    Matrix X_train = DataLoader::load_images("./data/emnist-balanced-train-images-idx3-ubyte");
+    Matrix Y_train = DataLoader::load_labels("./data/emnist-balanced-train-labels-idx1-ubyte");
     std::cout << "Loading Test Set..." << std::endl;
-    Matrix X_test = DataLoader::load_images("emnist-balanced-test-images-idx3-ubyte");
-    Matrix Y_test = DataLoader::load_labels("emnist-balanced-test-labels-idx1-ubyte");
+    Matrix X_test = DataLoader::load_images("./data/emnist-balanced-test-images-idx3-ubyte");
+    Matrix Y_test = DataLoader::load_labels("./data/emnist-balanced-test-labels-idx1-ubyte");
     Network nn;
     nn.add(new Dense(784,512));
     nn.add(new Activation(leaky_relu,dleaky_relu));
@@ -73,7 +74,7 @@ int main()
     nn.add(new Dense(128,64));
     nn.add(new Activation(leaky_relu,dleaky_relu));
     nn.add(new Dense(64,47));
-    nn.add(new Activation(sigmoid,dsigmoid));
+    nn.add(new Softmax());
     
     int epochs = 5;
     int batch_size = 64; 
