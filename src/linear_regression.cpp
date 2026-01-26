@@ -1,5 +1,5 @@
 #include "../include/linear_regression.h"
-#include "../include/matrix.h"
+#include "../include/core/matrix.h"
 #include <iostream>
 #include <chrono>
 

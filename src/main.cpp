@@ -1,12 +1,12 @@
 #include <iostream>
 #include <vector>
-#include "../include/matrix.h"
-#include "../include/utils.h"
-#include "../include/layer.h"
-#include "../include/dense.h"
+#include "../include/core/matrix.h"
+#include "../include/core/utils.h"
+#include "../include/layers/layer.h"
+#include "../include/layers/dense.h"
 #include "../include/activation.h"
 #include "../include/network.h"
-#include "../include/data.h"
+#include "../include/io/data.h"
 #include <algorithm>
 #include <chrono>
 

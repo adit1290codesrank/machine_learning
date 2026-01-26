@@ -1,7 +1,7 @@
 #ifndef LAYER_H
 #define LAYER_H
 
-#include "matrix.h"
+#include "../core/matrix.h"
 
 class Layer
 {

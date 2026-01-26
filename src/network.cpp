@@ -1,5 +1,5 @@
 #include "../include/network.h"
-#include "../include/utils.h"
+#include "../include/core/utils.h"
 #include <iostream>
 
 Network::~Network()

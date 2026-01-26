@@ -2,8 +2,8 @@
 #define NETWORK_H
 
 #include <vector>
-#include "layer.h"
-#include "matrix.h"
+#include "./layers/layer.h"
+#include "./core/matrix.h"
 
 class Network
 {

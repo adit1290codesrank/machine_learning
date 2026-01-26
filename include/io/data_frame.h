@@ -1,7 +1,7 @@
 #ifndef DATAFRAME_H
 #define DATAFRAME_H
 
-#include "matrix.h"
+#include "../core/matrix.h"
 #include <string>
 #include <vector>
 

@@ -1,7 +1,7 @@
 #ifndef LOGISTIC_REGRESSION_H
 #define LOGISTIC_REGRESSION_H
 
-#include "matrix.h"
+#include "./core/matrix.h"
 
 class LogisticRegression
 {

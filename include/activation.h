@@ -1,8 +1,8 @@
 #ifndef ACTIVATION_H
 #define ACTIVATION_H
 
-#include "layer.h"
-#include "matrix.h"
+#include "./layers/layer.h"
+#include "./core/matrix.h"
 #include <functional>
 
 typedef double (*Activate)(double);

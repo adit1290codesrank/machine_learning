@@ -1,5 +1,5 @@
 #include "../include/logistic_regression.h"
-#include "../include/utils.h"
+#include "../include/core/utils.h"
 #include <iostream>
 #include <cmath>
 

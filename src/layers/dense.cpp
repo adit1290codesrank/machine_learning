@@ -1,4 +1,4 @@
-#include "../include/dense.h"
+#include "../include/layers/dense.h"
 #include <iostream>
 #include <cmath>
 

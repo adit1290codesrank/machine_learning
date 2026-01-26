@@ -2,7 +2,7 @@
 #define DENSE_H
 
 #include "layer.h"
-#include "matrix.h"
+#include "../core/matrix.h"
 
 class Dense:public Layer
 {

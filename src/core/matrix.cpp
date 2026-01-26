@@ -1,4 +1,4 @@
-#include "../include/matrix.h"
+#include "../include/core/matrix.h"
 #include <omp.h>
 #include <stdexcept>
 #include <functional>
