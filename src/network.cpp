@@ -27,7 +27,7 @@ void Network::fit(const Matrix& X,const Matrix& y, int epochs,double learning_ra
         Matrix output=predict(X);
         Matrix delta=output-y;
         for(int j=m-1;j>=0;j--) delta=layers[j]->backward_pass(delta,learning_rate);
-        if(i%1000==0) std::cout<<"Epoch "<<i<<", Loss: "<<mse(y,output)<<std::endl;
+        //if(i%1000==0) std::cout<<"Epoch "<<i<<", Loss: "<<mse(y,output)<<std::endl;
     }
 }
 

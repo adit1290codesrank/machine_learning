@@ -171,3 +171,11 @@ Matrix Matrix::Hadamard(const Matrix& matrix) const
     for(int i=0;i<rows*cols;++i)ans.data[i]=data[i]*matrix.data[i];
     return ans;
 }
+
+Matrix Matrix::slice(int start,int end)
+{
+    if(start<0||end>rows||start>=end) throw std::out_of_range("Slice indices out of range");
+    Matrix result(end-start,cols);
+    for(int i=start;i<end;++i) for(int j=0;j<cols;++j) result.data[(i-start)*cols+j]=data[i*cols+j];
+    return result;
+}

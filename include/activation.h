@@ -17,7 +17,6 @@ class Activation:public Layer
     private:
         Activate f;
         Activate df;
-        Matrix input;
 };
 
 #endif

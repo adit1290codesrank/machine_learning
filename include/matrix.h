@@ -37,6 +37,7 @@ class Matrix
         Matrix operator*(double scalar) const;
 
         //Utilities
+        Matrix slice(int start,int end);
         Matrix transpose() const;
         Matrix sum_rows() const;
         Matrix Hadamard(const Matrix& matrix) const;
