@@ -3,9 +3,15 @@
 
 #include <functional>
 #include <fstream>
+#include <vector>
+
+extern "C" void cuda_matmul(const double* A,const double* B,double* C,int m,int k,int n);
+
+extern "C" void launch_conv2d(const double* h_input, const double* h_kernel, double* h_output,int batch_size, int in_h, int in_w, int in_d,int out_h, int out_w, int num_filters, int k_size);
 
 class Matrix
 {
+    friend class Conv2D;
     public:
         int rows;
         int cols;

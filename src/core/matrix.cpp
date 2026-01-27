@@ -102,10 +102,14 @@ Matrix Matrix::operator*(const Matrix& matrix) const
 {
     if(cols!=matrix.rows) throw std::invalid_argument("Dimension mismatch");;
     Matrix ans(rows,matrix.cols);
-    #pragma omp parallel for
-    for(int i=0;i<rows;i++) for(int k=0;k<cols;k++) for(int j=0;j<matrix.cols;j++)
-        ans.data[i*matrix.cols+j]+=data[i*cols+k]*matrix.data[k*matrix.cols+j];
-    //ikj loop order for better cache performance because it stays constant for the inner loop
+    long long vol=(long long)rows*(long long)cols*(long long)matrix.cols;
+    if(vol>100000)cuda_matmul(this->data,matrix.data,ans.data,rows,cols,matrix.cols);
+    else
+    {
+        #pragma omp parallel for
+        for(int i=0;i<rows;i++) for(int k=0;k<cols;k++) for(int j=0;j<matrix.cols;j++)ans.data[i*matrix.cols+j]+=data[i*cols+k]*matrix.data[k*matrix.cols+j];
+        //ikj loop order for better cache performance because it stays constant for the inner loop
+    }
     return ans;
 }
 

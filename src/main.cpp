@@ -67,30 +67,39 @@ int main()
     Matrix X_test = DataLoader::load_images("./data/emnist-balanced-test-images-idx3-ubyte");
     Matrix Y_test = DataLoader::load_labels("./data/emnist-balanced-test-labels-idx1-ubyte");
     Network nn;
-    nn.add(new Conv2D(28,28,1,16,3));
-    nn.add(new BatchNorm(26*26*16));
+    nn.add(new Conv2D(28,28,1,32,3)); 
+    nn.add(new BatchNorm(26*26*32));
     nn.add(new Activation(leaky_relu,dleaky_relu));
-    nn.add(new Pooling(26,26,16,2,2));
+    nn.add(new Pooling(26,26,32,2,2));
 
-    nn.add(new Conv2D(13,13,16,32,3));
-    nn.add(new BatchNorm(11*11*32));
+    nn.add(new Conv2D(13,13,32,64,3)); 
+    nn.add(new BatchNorm(11*11*64));
     nn.add(new Activation(leaky_relu,dleaky_relu));
-    nn.add(new Pooling(11,11,32,2,2));
+    nn.add(new Pooling(11,11,64,2,2));
 
-    nn.add(new Dense(800, 128));
+    nn.add(new Dense(1600, 512));
+    nn.add(new BatchNorm(512));
+    nn.add(new Activation(leaky_relu, dleaky_relu));
+
+    nn.add(new Dense(512, 128));
     nn.add(new BatchNorm(128));
     nn.add(new Activation(leaky_relu, dleaky_relu));
 
     nn.add(new Dense(128, 47));
     nn.add(new Softmax());
 
-    int epochs=5;
+    int epochs=10;
     int batch_size=32;
     double learning_rate=0.001;
     std::cout << "Starting CNN Training..." << std::endl;
 
     for(int epoch=1;epoch<=epochs;epoch++)
     {
+        if(epoch == 6) 
+        {
+            std::cout << "[!] Scheduler: Dropping Learning Rate to 0.0001" << std::endl;
+            learning_rate = 0.0001;
+        }
         for(int i=0;i<X_train.rows;i+=batch_size)
         {
             int end=std::min(i+batch_size,X_train.rows);

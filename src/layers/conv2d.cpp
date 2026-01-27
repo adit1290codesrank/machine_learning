@@ -2,6 +2,7 @@
 #include <iostream>
 #include <random>
 #include <fstream>
+#include <omp.h>
 
 Conv2D::Conv2D(int h,int w,int d,int f,int k):h(h),w(w),d(d),f(f),k(k)
 {
@@ -40,23 +41,20 @@ Matrix Conv2D::forward_pass(const Matrix& input)
 {
     this->input=input;
     Matrix output(input.rows,f*oh*ow);
-    #pragma omp parallel for
-    for(int r=0;r<input.rows;r++)
-    {
-        for(int filter=0;filter<f;filter++)
-        {
-            for(int i=0;i<oh;i++)
-            {
-                for(int j=0;j<ow;j++)
-                {
-                    double sum=0.0;
-                    for(int depth=0;depth<d;depth++)for(int ker_i=0;ker_i<k;ker_i++) for(int ker_j=0;ker_j<k;ker_j++) sum+=input(r,depth*h*w+(i+ker_i)*w+(j+ker_j))*kernels[filter][depth](ker_i,ker_j);
-                    sum+=b[filter];
-                    output(r,filter*oh*ow+i*ow+j)=sum;
-                }
-            }
+    std::vector<double> flat_kernels(f*d*k*k);
+
+    for(int i = 0; i < f; i++) 
+    {          
+        for(int j = 0; j < d; j++) 
+        {      
+            Matrix& mat = kernels[i][j];
+            int size = k * k;
+            for(int m = 0; m < size; m++) flat_kernels.push_back(mat.data[m]);
         }
     }
+    launch_conv2d(input.data, flat_kernels.data(), output.data,input.rows, h, w, d, oh, ow, f, k);
+    #pragma omp parallel for
+    for(int i = 0; i < input.rows; i++) for(int j = 0; j < f; j++) for(int pixel=0;pixel<oh*ow;pixel++) output(i,j*oh*ow)+=b[j];
     return output;
 }
 
@@ -97,21 +95,21 @@ Matrix Conv2D::backward_pass(const Matrix& delta,double learning_rate)
     }
     t++;
     m=1.0-std::pow(b1,t);v=1.0-std::pow(b2,t);
-    for(int filter=0; filter<f; filter++) 
+    for(int j=0; j<f; j++) 
     {
-        mb[filter]=b1*mb[filter]+(1-b1)*db[filter];
-        vb[filter]=0.999*vb[filter]+(0.001)*db[filter]*db[filter];
+        mb[j]=b1*mb[j]+(1-b1)*db[j];
+        vb[j]=0.999*vb[j]+(0.001)*db[j]*db[j];
 
-        b[filter]-=learning_rate*(mb[filter]/m)/((std::sqrt(vb[filter]/v)+e));
+        b[j]-=learning_rate*(mb[j]/m)/((std::sqrt(vb[j]/v)+e));
         for(int depth=0; depth<d; depth++) 
         {
             for(int r=0; r<k; r++) 
             {
                 for(int c=0; c<k; c++) 
                 {
-                    mk[filter][depth](r,c)=b1*mk[filter][depth](r,c)+(1.0-b1)*dk[filter][depth](r,c);
-                    vk[filter][depth](r,c)=b2*vk[filter][depth](r,c)+(1.0-b2)*dk[filter][depth](r,c)*dk[filter][depth](r,c);
-                    kernels[filter][depth](r, c)-=learning_rate*(mk[filter][depth](r,c)/m)/(std::sqrt(vk[filter][depth](r,c)/v)+e);
+                    mk[j][depth](r,c)=b1*mk[j][depth](r,c)+(1.0-b1)*dk[j][depth](r,c);
+                    vk[j][depth](r,c)=b2*vk[j][depth](r,c)+(1.0-b2)*dk[j][depth](r,c)*dk[j][depth](r,c);
+                    kernels[j][depth](r, c)-=learning_rate*(mk[j][depth](r,c)/m)/(std::sqrt(vk[j][depth](r,c)/v)+e);
                 }
             }
         }

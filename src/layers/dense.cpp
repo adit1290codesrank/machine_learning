@@ -33,6 +33,7 @@
     {
         this->input=input;
         Matrix output = input*w;
+        #pragma omp parallel for
         for(int i=0; i < output.rows; i++) for(int j=0; j < output.cols; j++) output(i,j) += b(0,j);
         return output;
     }
@@ -45,6 +46,7 @@
         //Adam optimizer
         t++;
         m=1.0-std::pow(b1,t);v=1.0-std::pow(b2,t);
+        #pragma omp parallel for
         for(int i=0;i<w.rows;i++)
         {
             for(int j=0;j<w.cols;j++)
