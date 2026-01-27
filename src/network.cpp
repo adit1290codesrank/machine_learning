@@ -1,6 +1,7 @@
 #include "../include/network.h"
 #include "../include/core/utils.h"
 #include <iostream>
+#include <fstream>
 
 Network::~Network()
 {
@@ -27,7 +28,30 @@ void Network::fit(const Matrix& X,const Matrix& y, int epochs,double learning_ra
         Matrix output=predict(X);
         Matrix delta=output-y;
         for(int j=m-1;j>=0;j--) delta=layers[j]->backward_pass(delta,learning_rate);
-        //if(i%1000==0) std::cout<<"Epoch "<<i<<", Loss: "<<mse(y,output)<<std::endl;
     }
+}
+
+void Network::save(const std::string& filename) 
+{
+    std::ofstream file(filename,std::ios::binary);
+    if(!file.is_open()) {
+        std::cerr << "Error: Could not open " << filename << " for saving." << std::endl;
+        return;
+    }
+    for(Layer* layer : layers) layer->save(file);
+    file.close();
+    std::cout << "Model successfully saved to " << filename << std::endl;
+}
+
+void Network::load(const std::string& filename) 
+{
+    std::ifstream file(filename,std::ios::binary);
+    if(!file.is_open()) {
+        std::cerr << "Error: Could not open " << filename << " for loading." << std::endl;
+        return;
+    }
+    for(Layer* layer : layers)layer->load(file);
+    file.close();
+    std::cout << "Model successfully loaded from " << filename << std::endl;
 }
 

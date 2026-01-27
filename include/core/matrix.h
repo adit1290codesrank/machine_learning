@@ -2,6 +2,7 @@
 #define MATRIX_H
 
 #include <functional>
+#include <fstream>
 
 class Matrix
 {
@@ -46,6 +47,8 @@ class Matrix
         static Matrix ones(int r, int c);
         static Matrix random(int r, int c, double min=-1.0, double max=1.0);
         Matrix apply(double (*function)(double)) const;
+        void save(std::ofstream& file) const;
+        void load(std::ifstream& file);
     private:
         /*
         1-D array used because only one pointer is needed which makes memory contiguous.

@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -O3 -Wall -fopenmp -I include
+CXXFLAGS = -O3 -march=native -fopenmp -Wall -std=c++17 -I include
 
 SRC_DIRS := src src/core src/layers src/io
 

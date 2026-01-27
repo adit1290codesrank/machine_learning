@@ -39,10 +39,11 @@ Matrix DataLoader::load_images(const std::string& filepath)
             {
                 unsigned char pixel=0;
                 file.read((char*)&pixel, sizeof(pixel));
-                X(i, k*rows + j) = (double)pixel / 255.0;
+                X(i, j*cols + k) = (double)pixel / 255.0;
             }
         }
     }
+    file.close();
     return X;
 }
 

@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <functional>
 #include <iostream>
+#include <fstream>
 
 Matrix::Matrix() : rows(0), cols(0), data(nullptr) {}
 
@@ -178,4 +179,31 @@ Matrix Matrix::slice(int start,int end)
     Matrix result(end-start,cols);
     for(int i=start;i<end;++i) for(int j=0;j<cols;++j) result.data[(i-start)*cols+j]=data[i*cols+j];
     return result;
+}
+
+void Matrix::save(std::ofstream& file) const 
+{
+    file.write((char*)&rows,sizeof(int));
+    file.write((char*)&cols,sizeof(int));
+    file.write((char*)data,rows*cols*sizeof(double));
+}
+
+void Matrix::load(std::ifstream& file) 
+{
+    int new_rows, new_cols;
+    file.read((char*)&new_rows,sizeof(int));
+    file.read((char*)&new_cols,sizeof(int));
+
+    int new_size = new_rows*new_cols;
+    int old_size = rows*cols;
+
+    if (new_size != old_size) 
+    {
+        if (data != nullptr) delete[] data; 
+        data = new double[new_size]; 
+    }
+
+    rows = new_rows;
+    cols = new_cols;
+    file.read((char*)data, new_size*sizeof(double));
 }

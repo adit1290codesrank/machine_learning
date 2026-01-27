@@ -44,7 +44,7 @@
         Matrix delta_prev = delta*w.transpose();
         //Adam optimizer
         t++;
-        double b1=0.9,b2=0.999,e=1e-8,m=1.0-std::pow(b1,t),v=1.0-std::pow(b2,t);
+        m=1.0-std::pow(b1,t);v=1.0-std::pow(b2,t);
         for(int i=0;i<w.rows;i++)
         {
             for(int j=0;j<w.cols;j++)
@@ -62,5 +62,17 @@
             b(0,i)-=learning_rate*(mb(0,i)/m)/(std::sqrt(vb(0,i)/v)+e);
         }
         return delta_prev;
+    }
+
+    void Dense::save(std::ofstream& file) 
+    {
+        w.save(file);
+        b.save(file);
+    }
+
+    void Dense::load(std::ifstream& file) 
+    {
+        w.load(file);
+        b.load(file);
     }
 
