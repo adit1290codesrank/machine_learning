@@ -2,6 +2,9 @@
 #include <vector>
 #include <algorithm>
 #include <ctime>
+#include <numeric>
+#include <random>
+#include <chrono>
 #include "../include/core/matrix.h"
 #include "../include/core/utils.h"
 #include "../include/layers/dense.h"
@@ -38,7 +41,6 @@ int argmax(const Matrix& m, int row)
 double get_accuracy(Network& nn, Matrix& X, Matrix& Y) 
 {
     std::cout << "Calculating predictions..." << std::endl;
-    
     int correct = 0;
     int batch_size = 1024;
     for(int i=0; i < X.rows; i += batch_size) 
@@ -49,9 +51,7 @@ double get_accuracy(Network& nn, Matrix& X, Matrix& Y)
         Matrix predictions = nn.predict(X_batch);
         for(int j=0; j < predictions.rows; j++) 
         {
-            int pred_idx = argmax(predictions, j);
-            int true_idx = argmax(Y_batch, j);
-            if(pred_idx == true_idx) correct++;
+            if(argmax(predictions, j) == argmax(Y_batch, j)) correct++;
         }
     }
     return (double)correct / X.rows * 100.0;
@@ -59,13 +59,13 @@ double get_accuracy(Network& nn, Matrix& X, Matrix& Y)
 
 int main()
 {
-    std::srand(std::time(0));
     std::cout << "Loading Train Set..." << std::endl;
     Matrix X_train = DataLoader::load_images("./data/emnist-balanced-train-images-idx3-ubyte");
     Matrix Y_train = DataLoader::load_labels("./data/emnist-balanced-train-labels-idx1-ubyte");
     std::cout << "Loading Test Set..." << std::endl;
     Matrix X_test = DataLoader::load_images("./data/emnist-balanced-test-images-idx3-ubyte");
     Matrix Y_test = DataLoader::load_labels("./data/emnist-balanced-test-labels-idx1-ubyte");
+
     Network nn;
     nn.add(new Conv2D(28,28,1,32,3)); 
     nn.add(new BatchNorm(26*26*32));
@@ -88,46 +88,61 @@ int main()
     nn.add(new Dense(128, 47));
     nn.add(new Softmax());
 
-    int epochs=10;
-    int batch_size=32;
-    double learning_rate=0.001;
-    std::cout << "Starting CNN Training..." << std::endl;
+    int epochs = 10;
+    int batch_size = 32;
+    double learning_rate = 0.001;
+    std::vector<int> indices(X_train.rows);
+    std::iota(indices.begin(), indices.end(), 0); 
+    std::random_device rd;
+    std::mt19937 g(rd());
 
-    for(int epoch=1;epoch<=epochs;epoch++)
+    std::cout << "Starting CNN Training..." << std::endl;
+    
+    for(int epoch=1; epoch<=epochs; epoch++)
     {
+        auto start_time = std::chrono::high_resolution_clock::now();
+        std::shuffle(indices.begin(), indices.end(), g);
+
         if(epoch == 6) 
         {
             std::cout << "[!] Scheduler: Dropping Learning Rate to 0.0001" << std::endl;
             learning_rate = 0.0001;
         }
-        for(int i=0;i<X_train.rows;i+=batch_size)
+
+        for(int i=0; i < X_train.rows; i += batch_size)
         {
-            int end=std::min(i+batch_size,X_train.rows);
-            Matrix X_batch=X_train.slice(i,end);
-            Matrix Y_batch=Y_train.slice(i,end);
-            nn.fit(X_batch,Y_batch,1,learning_rate);
+            int end = std::min(i + batch_size, X_train.rows);
+            int current_batch_size = end - i;
+
+            Matrix X_batch(current_batch_size, X_train.cols);
+            Matrix Y_batch(current_batch_size, Y_train.cols);
+
+            for(int b = 0; b < current_batch_size; b++) 
+            {
+                int idx = indices[i + b];
+                for(int c=0; c < X_train.cols; c++) X_batch(b, c) = X_train(idx, c);
+                for(int c=0; c < Y_train.cols; c++) Y_batch(b, c) = Y_train(idx, c);
+            }
+
+            nn.fit(X_batch, Y_batch, 1, learning_rate);
+            
             if((i / batch_size) % 100 == 0) std::cout << ".";
         }
-        std::cout<<std::endl;
-        std::cout << "Epoch"<<epoch<<"-Accuracy: " << get_accuracy(nn, X_test, Y_test) << "%" << std::endl;
-    }
-    std::cout << "Evaluating on Test Set..." << std::endl;
-    int test_correct = 0;
-    int test_total = X_test.rows;
-    int test_batch_size = 1000;
 
-    for(int i = 0; i < test_total; i += test_batch_size)
-    {
-        int end = std::min(i + test_batch_size, test_total);
-        Matrix X_test_batch = X_test.slice(i, end);
-        Matrix Y_test_batch = Y_test.slice(i, end);
-        Matrix preds = nn.predict(X_test_batch);
-        for(int k = 0; k < preds.rows; k++)if(argmax(preds, k)==argmax(Y_test_batch, k))test_correct++;
+        std::cout << std::endl;
+        double acc = get_accuracy(nn, X_test, Y_test);
+        auto end_time = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = end_time - start_time;
+        
+        int minutes = (int)elapsed.count() / 60;
+        int seconds = (int)elapsed.count() % 60;
+
+        std::cout << "Epoch " << epoch << " Result: " << acc << "% Accuracy" 
+                  << " | Time: " << minutes << "m " << seconds << "s" << std::endl;
+        std::cout << "------------------------------------------------" << std::endl;
     }
-    double final_acc = (double)test_correct / test_total * 100.0;
-    std::cout << "Test Accuracy: " << final_acc << "%" << std::endl;
-    std::cout << "Saving model..." << std::endl;
+
+    std::cout << "Test Accuracy: " << get_accuracy(nn, X_test, Y_test) << "%" << std::endl;
     nn.save("emnist_model.bin");
     return 0;
 }
-

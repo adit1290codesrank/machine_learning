@@ -95,32 +95,101 @@ __global__ void conv2dkernel(const double* input,const double* kernel,double* ou
     output[idx] = sum;
 }
 
-extern "C" void launch_conv2d(const double* h_input, const double* h_kernel, double* h_output,int batch_size, int in_h, int in_w, int in_d,int out_h, int out_w, int num_filters, int k_size)
+extern "C" void launch_conv2d_lean(const double* d_input, const double* d_kernel, double* d_output,int batch_size, int in_h, int in_w, int in_d,int out_h, int out_w, int num_filters, int k_size)
 {
-    double *d_input, *d_kernel, *d_output;
-    int input_size = batch_size * in_d * in_h * in_w;
-    int kernel_size_total = num_filters * in_d * k_size * k_size;
     int output_size = batch_size * num_filters * out_h * out_w;
+    int threads = 256;
+    int blocks = (output_size + threads - 1) / threads;
 
-    check_cuda(cudaMalloc((void**)&d_input, input_size * sizeof(double)), "Malloc Conv Input");
-    check_cuda(cudaMalloc((void**)&d_kernel, kernel_size_total * sizeof(double)), "Malloc Conv Kernel");
-    check_cuda(cudaMalloc((void**)&d_output, output_size * sizeof(double)), "Malloc Conv Output");
-
-    check_cuda(cudaMemcpy(d_input, h_input, input_size * sizeof(double), cudaMemcpyHostToDevice), "Copy Input");
-    check_cuda(cudaMemcpy(d_kernel, h_kernel, kernel_size_total * sizeof(double), cudaMemcpyHostToDevice), "Copy Kernel");
-
-    int total_threads = output_size;
-    int threads_per_block = 256;
-    int blocks_per_grid = (total_threads + threads_per_block - 1) / threads_per_block;
-
-    conv2dkernel<<<blocks_per_grid, threads_per_block>>>(d_input, d_kernel, d_output,batch_size, in_h, in_w, in_d,out_h, out_w, num_filters, k_size);
-    
-    check_cuda(cudaGetLastError(), "Conv2D Kernel Launch");
-    check_cuda(cudaDeviceSynchronize(), "Conv2D Kernel Sync");
-
-    check_cuda(cudaMemcpy(h_output, d_output, output_size * sizeof(double), cudaMemcpyDeviceToHost), "Copy Output");
-    
-    cudaFree(d_input);
-    cudaFree(d_kernel);
-    cudaFree(d_output);
+    conv2dkernel<<<blocks, threads>>>(d_input, d_kernel, d_output, batch_size, in_h, in_w, in_d, out_h, out_w, num_filters, k_size);
 }
+
+__global__ void conv2d_backward_weights_kernel(const double* input, const double* delta, double* d_kernel, double* d_bias,int batch_size, int in_h, int in_w, int in_d,int out_h, int out_w, int num_filters, int k_size)
+{
+    int total_elements = batch_size * num_filters * out_h * out_w;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= total_elements) return;
+
+    int j = idx % out_w;
+    int i = (idx / out_w) % out_h;
+    int f = (idx / (out_w * out_h)) % num_filters;
+    int b = idx / (out_w * out_h * num_filters);
+
+    double d_val = delta[idx];
+
+    atomicAdd(&d_bias[f], d_val);
+
+    for (int d = 0; d < in_d; d++) 
+    {
+        for (int ki = 0; ki < k_size; ki++) 
+        {
+            for (int kj = 0; kj < k_size; kj++) 
+            {
+                int row_in = i + ki;
+                int col_in = j + kj;
+                
+                int input_idx = b * (in_d * in_h * in_w) + d * (in_h * in_w) + row_in * in_w + col_in;
+                double val = input[input_idx];
+                
+                int kernel_idx = f * (in_d * k_size * k_size) + d * (k_size * k_size) + ki * k_size + kj;
+                
+                atomicAdd(&d_kernel[kernel_idx], val * d_val);
+            }
+        }
+    }
+}
+
+__global__ void conv2d_backward_input_kernel(const double* delta, const double* kernel, double* d_input,int batch_size, int in_h, int in_w, int in_d,int out_h, int out_w, int num_filters, int k_size)
+{
+    int total_elements = batch_size * num_filters * out_h * out_w;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= total_elements) return;
+
+    int j = idx % out_w;
+    int i = (idx / out_w) % out_h;
+    int f = (idx / (out_w * out_h)) % num_filters;
+    int b = idx / (out_w * out_h * num_filters);
+
+    double d_val = delta[idx];
+
+    for (int d = 0; d < in_d; d++) 
+    {
+        for (int ki = 0; ki < k_size; ki++) 
+        {
+            for (int kj = 0; kj < k_size; kj++) 
+            {
+                
+                int kernel_idx = f * (in_d * k_size * k_size) + d * (k_size * k_size) + ki * k_size + kj;
+                double weight = kernel[kernel_idx];
+
+                int row_in = i + ki;
+                int col_in = j + kj;
+                int input_idx = b * (in_d * in_h * in_w) + d * (in_h * in_w) + row_in * in_w + col_in;
+                atomicAdd(&d_input[input_idx], d_val * weight);
+            }
+        }
+    }
+}
+
+extern "C" void launch_conv2d_backward_lean(const double* d_input, const double* d_delta, const double* d_kernel, double* d_dk, double* d_db, double* d_prev_delta,int batch_size, int in_h, int in_w, int in_d,int out_h, int out_w, int num_filters, int k_size)
+{
+    int delta_size = batch_size * num_filters * out_h * out_w;
+    int kernel_size = num_filters * in_d * k_size * k_size;
+    int bias_size = num_filters;
+    int input_size = batch_size * in_d * in_h * in_w;
+
+    cudaMemset(d_dk, 0, kernel_size * sizeof(double));
+    cudaMemset(d_db, 0, bias_size * sizeof(double));
+    cudaMemset(d_prev_delta, 0, input_size * sizeof(double));
+
+    int threads = 256;
+    int blocks = (delta_size + threads - 1) / threads;
+
+    conv2d_backward_weights_kernel<<<blocks, threads>>>(d_input, d_delta, d_dk, d_db, batch_size, in_h, in_w, in_d, out_h, out_w, num_filters, k_size);
+    conv2d_backward_input_kernel<<<blocks, threads>>>(d_delta, d_kernel, d_prev_delta, batch_size, in_h, in_w, in_d, out_h, out_w, num_filters, k_size);
+}
+
+extern "C" void gpu_alloc(double** ptr, size_t size) { cudaMalloc(ptr, size); }
+extern "C" void gpu_free(double* ptr) { cudaFree(ptr); }
+extern "C" void gpu_memcpy_h2d(double* dest, const double* src, size_t size) { cudaMemcpy(dest, src, size, cudaMemcpyHostToDevice); }
+extern "C" void gpu_memcpy_d2h(double* dest, const double* src, size_t size) { cudaMemcpy(dest, src, size, cudaMemcpyDeviceToHost); }

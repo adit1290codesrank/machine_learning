@@ -5,9 +5,18 @@
 #include <fstream>
 #include <vector>
 
-extern "C" void cuda_matmul(const double* A,const double* B,double* C,int m,int k,int n);
-
-extern "C" void launch_conv2d(const double* h_input, const double* h_kernel, double* h_output,int batch_size, int in_h, int in_w, int in_d,int out_h, int out_w, int num_filters, int k_size);
+extern "C" 
+{
+    void cuda_matmul(const double* A,const double* B,double* C,int m,int k,int n);
+    void launch_conv2d(const double* h_input, const double* h_kernel, double* h_output,int batch_size, int in_h, int in_w, int in_d,int out_h, int out_w, int num_filters, int k_size);
+    void launch_conv2d_backward(const double* h_input, const double* h_delta, const double* h_kernel, double* h_dk, double* h_db, double* h_prev_delta,int batch_size, int in_h, int in_w, int in_d,int out_h, int out_w, int num_filters, int k_size);
+    void gpu_alloc(double** ptr, size_t size);
+    void gpu_free(double* ptr);
+    void gpu_memcpy_h2d(double* dest, const double* src, size_t size);
+    void gpu_memcpy_d2h(double* dest, const double* src, size_t size);
+    void launch_conv2d_lean(const double* d_in, const double* d_k, double* d_out, int b, int h, int w, int d, int oh, int ow, int f, int k);
+    void launch_conv2d_backward_lean(const double* d_in, const double* d_del, const double* d_k, double* d_dk, double* d_db, double* d_prev, int b, int h, int w, int d, int oh, int ow, int f, int k);
+}
 
 class Matrix
 {
