@@ -3,12 +3,13 @@
         {
             "name": "Win32",
             "includePath": [
-    "${workspaceFolder}/**",
-    "${workspaceFolder}/include",
-    "${workspaceFolder}/include/core",
-    "${workspaceFolder}/include/layers",
-    "${workspaceFolder}/include/io"
-],
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/include/core",
+                "${workspaceFolder}/include/layers",
+                "D:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.1\\include",
+                "${workspaceFolder}/include/io"
+            ],
             "defines": [
                 "_DEBUG",
                 "UNICODE",

@@ -7,6 +7,7 @@
 class Layer
 {
     public:
+        bool is_training=true;
         virtual ~Layer() = default;
         virtual Matrix forward_pass(const Matrix& input)=0;
         virtual Matrix backward_pass(const Matrix& output,double learning_rate)=0;

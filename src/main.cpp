@@ -12,9 +12,11 @@
 #include "../include/layers/conv2d.h"
 #include "../include/layers/pooling.h"
 #include "../include/layers/batchnorm.h"
+#include "../include/layers/dropout.h"
 #include "../include/activation.h"
 #include "../include/network.h"
 #include "../include/io/data.h"
+#include <iomanip>
 
 char get_emnist_char(int index) 
 {
@@ -57,6 +59,14 @@ double get_accuracy(Network& nn, Matrix& X, Matrix& Y)
     return (double)correct / X.rows * 100.0;
 }
 
+double calculate_loss(const Matrix& predictions, const Matrix& targets) 
+{
+    double loss = 0;
+    int n = predictions.rows;
+    for (int i = 0; i < n; i++) for (int j = 0; j < predictions.cols; j++) if (targets(i, j) > 0.5) loss -= std::log(std::max(predictions(i, j), 1e-12));     
+    return loss / n;
+}
+
 int main()
 {
     std::cout << "Loading Train Set..." << std::endl;
@@ -81,16 +91,21 @@ int main()
     nn.add(new BatchNorm(512));
     nn.add(new Activation(leaky_relu, dleaky_relu));
 
+    nn.add(new Dropout(0.5));
+
     nn.add(new Dense(512, 128));
     nn.add(new BatchNorm(128));
     nn.add(new Activation(leaky_relu, dleaky_relu));
+
+    nn.add(new Dropout(0.25));
 
     nn.add(new Dense(128, 47));
     nn.add(new Softmax());
 
     int epochs = 10;
-    int batch_size = 32;
+    int batch_size = 128;
     double learning_rate = 0.001;
+
     std::vector<int> indices(X_train.rows);
     std::iota(indices.begin(), indices.end(), 0); 
     std::random_device rd;
@@ -102,7 +117,8 @@ int main()
     {
         auto start_time = std::chrono::high_resolution_clock::now();
         std::shuffle(indices.begin(), indices.end(), g);
-
+        double epoch_loss=0.0;
+        int num_batches = (X_train.rows+batch_size-1)/batch_size;
         if(epoch == 6) 
         {
             std::cout << "[!] Scheduler: Dropping Learning Rate to 0.0001" << std::endl;
@@ -123,13 +139,31 @@ int main()
                 for(int c=0; c < X_train.cols; c++) X_batch(b, c) = X_train(idx, c);
                 for(int c=0; c < Y_train.cols; c++) Y_batch(b, c) = Y_train(idx, c);
             }
+            
 
+            Matrix output=nn.predict(X_batch);
+            epoch_loss+=calculate_loss(output,Y_batch);
             nn.fit(X_batch, Y_batch, 1, learning_rate);
             
-            if((i / batch_size) % 100 == 0) std::cout << ".";
-        }
+            int batch_idx = i / batch_size;
+            double running_loss = epoch_loss / (batch_idx + 1); 
 
-        std::cout << std::endl;
+            if (batch_idx % 50 == 0) 
+            { 
+                float progress = (float)batch_idx / num_batches;
+                int bar_width = 30;
+                int pos = bar_width * progress;
+                std::cout << "\rEpoch " << epoch << " [";
+                for (int b = 0; b < bar_width; ++b) 
+                {
+                    if (b < pos) std::cout << "=";
+                    else if (b == pos) std::cout << ">";
+                    else std::cout << " ";
+                }
+                std::cout << "] " << int(progress * 100.0) << "% " << "| Loss: " << std::fixed << std::setprecision(4) << running_loss << " " << std::flush;
+            }
+        }
+        std::cout << "] 100%" << std::endl;
         double acc = get_accuracy(nn, X_test, Y_test);
         auto end_time = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end_time - start_time;

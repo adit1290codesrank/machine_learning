@@ -15,6 +15,7 @@ void Network::add(Layer* layer)
 
 Matrix Network::predict(const Matrix& input)
 {
+    for (auto layer : layers) layer->is_training = false;
     Matrix output=input;
     for(auto layer:layers) output=layer->forward_pass(output);
     return output;
@@ -25,7 +26,9 @@ void Network::fit(const Matrix& X,const Matrix& y, int epochs,double learning_ra
     int m=layers.size();
     for(int i=0;i<epochs;i++)
     {
-        Matrix output=predict(X);
+        for (auto layer : layers) layer->is_training = true;
+        Matrix output=X;
+        for(auto layer : layers) output = layer->forward_pass(output);
         Matrix delta=output-y;
         for(int j=m-1;j>=0;j--) delta=layers[j]->backward_pass(delta,learning_rate);
     }

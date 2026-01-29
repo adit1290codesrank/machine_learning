@@ -103,7 +103,7 @@ Matrix Matrix::operator*(const Matrix& matrix) const
     if(cols!=matrix.rows) throw std::invalid_argument("Dimension mismatch");;
     Matrix ans(rows,matrix.cols);
     long long vol=(long long)rows*(long long)cols*(long long)matrix.cols;
-    if(vol>100000)cuda_matmul(this->data,matrix.data,ans.data,rows,cols,matrix.cols);
+    if(vol>100000)launch_matmul(this->data,matrix.data,ans.data,rows,cols,matrix.cols);
     else
     {
         #pragma omp parallel for
@@ -173,7 +173,12 @@ Matrix Matrix::Hadamard(const Matrix& matrix) const
 {
     if(rows!=matrix.rows||cols!=matrix.cols) throw std::invalid_argument("Dimension mismatch");
     Matrix ans(rows,cols);
-    for(int i=0;i<rows*cols;++i)ans.data[i]=data[i]*matrix.data[i];
+    if(rows*cols>50000) launch_hadamard(this->data,matrix.data,ans.data,rows*cols);
+    else
+    {
+        #pragma omp parallel for
+        for(int i=0;i<rows*cols;++i) ans.data[i]=data[i]*matrix.data[i];
+    }
     return ans;
 }
 

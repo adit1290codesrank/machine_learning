@@ -7,9 +7,8 @@
 
 extern "C" 
 {
-    void cuda_matmul(const double* A,const double* B,double* C,int m,int k,int n);
-    void launch_conv2d(const double* h_input, const double* h_kernel, double* h_output,int batch_size, int in_h, int in_w, int in_d,int out_h, int out_w, int num_filters, int k_size);
-    void launch_conv2d_backward(const double* h_input, const double* h_delta, const double* h_kernel, double* h_dk, double* h_db, double* h_prev_delta,int batch_size, int in_h, int in_w, int in_d,int out_h, int out_w, int num_filters, int k_size);
+    void launch_matmul(double* d_A, double* d_B, double* d_C, int m, int k, int n);
+    void launch_hadamard(double* dA, double* dB, double* dC, int size);
     void gpu_alloc(double** ptr, size_t size);
     void gpu_free(double* ptr);
     void gpu_memcpy_h2d(double* dest, const double* src, size_t size);
