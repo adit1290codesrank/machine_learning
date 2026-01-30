@@ -31,11 +31,16 @@ Normalization_with_mean_std normalize(const Matrix& X);
 Normalization_with_min_max min_max_scale(const Matrix& X);
 
 inline double sigmoid(double x) {return 1.0/(1.0+std::exp(-x));}
-inline double dsigmoid(double x) {double s=sigmoid(x); return s*(1.0 - s);} 
+inline double dsigmoid(double x) {return x*(1.0-x);} 
 inline double leaky_relu(double x) {return x>0?x:0.01*x;}
 inline double dleaky_relu(double x) {return x>0?1.0:0.01;}
-inline double tanh_(double x) {return std::tanh(x);}
-inline double dtanh(double x) {double t=std::tanh(x); return 1.0 - t*t;}
+inline double tanh_(double x)
+{
+    double a=std::exp(2*x);
+    return (a-1)/(a+1);
+}
+inline double dtanh(double x)
+{return (1.0-x*x);}
 double mse(const Matrix& y_true, const Matrix& y_pred);
 Matrix dmse(const Matrix& y_true, const Matrix& y_pred);
 double cross_entropy_loss(const Matrix& y_true, const Matrix& y_pred);
